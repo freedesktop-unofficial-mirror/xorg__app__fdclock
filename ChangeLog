@@ -1,6 +1,4 @@
-2003-12-01  Carl Worth  <cworth@isi.edu>
+2003-12-01  Keith Packard  <keithp@keithp.com>
 
-	* fdclock.c (draw_hand): Draw shadow before hand so that it
-	appears "under" the hand at least somewhat. Still requires a black
-	hand to look decent.
-
+	* fdclock.c: (find_argb_visual), (main_x):
+	Make clock translucent using ARGB visual where available.

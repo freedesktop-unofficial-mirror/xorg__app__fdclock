@@ -23,6 +23,7 @@
  */
 
 #include <cairo.h>
+#include <cairo-xlib.h>
 #include <math.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrender.h>
@@ -320,23 +321,81 @@ draw_clock (cairo_t *cr, double width, double height)
     cairo_restore (cr);
 }
 
+static Visual *
+find_argb_visual (Display *dpy, int scr)
+{
+    XVisualInfo		*xvi;
+    XVisualInfo		template;
+    int			nvi;
+    int			i;
+    XRenderPictFormat	*format;
+    Visual		*visual;
+
+    template.screen = scr;
+    template.depth = 32;
+    template.class = TrueColor;
+    xvi = XGetVisualInfo (dpy, 
+			  VisualScreenMask |
+			  VisualDepthMask |
+			  VisualClassMask,
+			  &template,
+			  &nvi);
+    if (!xvi)
+	return 0;
+    visual = 0;
+    for (i = 0; i < nvi; i++)
+    {
+	format = XRenderFindVisualFormat (dpy, xvi[i].visual);
+	if (format->type == PictTypeDirect && format->direct.alphaMask)
+	{
+	    visual = xvi[i].visual;
+	    break;
+	}
+    }
+
+    XFree (xvi);
+    return visual;
+}
+
 void
 main_x (int width, int height)
 {
     cairo_t *cr = cairo_create ();
     Display *dpy = XOpenDisplay (0);
     int scr = DefaultScreen (dpy);
-    Window  w = XCreateSimpleWindow (dpy, RootWindow (dpy, scr),
-				     0, 0, WIDTH, HEIGHT, 0, 0,
-				     WhitePixel (dpy, scr));
+    Window root = RootWindow (dpy, scr);
+    Visual *visual = find_argb_visual (dpy, scr);
+    XSetWindowAttributes wattr;
+    unsigned long wmask;
+    int	    depth;
+    Colormap cmap;
+    Window  w;
     GC		gc;
     XGCValues	gcv;
     Pixmap  background = None, buffer;
     XEvent  ev;
     Bool paint = False;
-    XSelectInput (dpy, w, ExposureMask|StructureNotifyMask);
-    XMapWindow (dpy, w);
     
+    wattr.event_mask = (ExposureMask | StructureNotifyMask);
+    if (visual)
+    {
+	depth = 32;
+	wattr.background_pixel = 0;
+	wattr.border_pixel = 0;
+	wattr.colormap = cmap = XCreateColormap (dpy, root, visual, AllocNone);
+    }
+    else
+    {
+	visual = DefaultVisual (dpy, scr);
+	depth = DefaultDepth (dpy, scr);
+	wattr.colormap = cmap = DefaultColormap (dpy, scr);
+	wattr.background_pixel = WhitePixel (dpy, scr);
+	wattr.border_pixel = BlackPixel (dpy, scr);
+    }
+    wmask = CWEventMask | CWBackPixel | CWBorderPixel | CWColormap;
+    w = XCreateWindow (dpy, root, 0, 0, width, height, 0,
+		       depth, InputOutput, visual, wmask, &wattr);
+    XMapWindow (dpy, w);
     gcv.graphics_exposures = False;
     gc = XCreateGC (dpy, w, GCGraphicsExposures, &gcv);
     for (;;)
@@ -375,21 +434,46 @@ main_x (int width, int height)
 	    paint = True;
 	if (paint)
 	{
+	    cairo_surface_t	*surface;
+		
 	    if (!background)
 	    {
-		background = XCreatePixmap (dpy, RootWindow (dpy, 0),
-					    width, height,
-					    DefaultDepth (dpy, scr));
-		cairo_set_target_drawable (cr, dpy, background);
-		cairo_set_rgb_color (cr, 1, 1, 1);
+		cairo_surface_t	*temp;
+		
+		background = XCreatePixmap (dpy, root,
+					    width, height, depth);
+		surface = cairo_xlib_surface_create (dpy, background,
+						     visual, 0, cmap);
+		temp = cairo_surface_create_similar (surface,
+						     CAIRO_FORMAT_ARGB32,
+						     width, height);
+		cairo_save (cr);
+		cairo_set_target_surface (cr, temp);
+		if (depth == 32)
+		{
+		    cairo_set_rgb_color (cr, 0, 0, 0);
+		    cairo_set_alpha (cr, 0);
+		}
+		else
+		    cairo_set_rgb_color (cr, 1, 1, 1);
+		    
 		cairo_rectangle (cr, 0, 0, width, height);
 		cairo_fill (cr);
+		cairo_set_alpha (cr, 1);
 		draw_clock (cr, width, height);
+		cairo_set_target_surface (cr, surface);
+		cairo_set_alpha (cr, 0.8);
+		cairo_show_surface (cr, temp, width, height);
+		cairo_surface_destroy (temp);
+		cairo_surface_destroy (surface);
+		cairo_restore (cr);
 	    }
-	    buffer = XCreatePixmap (dpy, RootWindow (dpy, 0),
-				    width, height,
-				    DefaultDepth (dpy, scr));
-	    cairo_set_target_drawable (cr, dpy, buffer);
+	    buffer = XCreatePixmap (dpy, root,
+				    width, height, depth);
+	    surface = cairo_xlib_surface_create (dpy, buffer,
+						 visual, 0, cmap);
+	    cairo_set_target_surface (cr, surface);
+	    cairo_surface_destroy (surface);
 	    XCopyArea (dpy, background, buffer, gc, 
 		       0, 0, width, height, 0, 0);
 	    draw_now (cr, width, height);
