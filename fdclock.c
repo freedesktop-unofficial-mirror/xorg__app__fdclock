@@ -152,15 +152,12 @@ draw_windows (cairo_t *cr)
     draw_window_at (cr, 30.25, 35.825, 0.5);
 }
 
-#define SCALE	10
 #define ROT_X_FACTOR	1.086
 #define ROT_Y_FACTOR	1.213
 #define NWIDTH	(64 * ROT_X_FACTOR)
 #define NHEIGHT	(48 * ROT_Y_FACTOR)
-#define WIDTH	(NWIDTH * SCALE)
-#define HEIGHT	(NHEIGHT * SCALE)
-#define CLOCK_WIDTH	WIDTH
-#define CLOCK_HEIGHT	WIDTH
+#define CLOCK_WIDTH	150
+#define CLOCK_HEIGHT	150
 
 void
 draw_logo (cairo_t *cr, double width, double height)
@@ -259,7 +256,7 @@ draw_time (cairo_t *cr, double width, double height, struct timeval *tv)
     
     second_angle = (tm->tm_sec + tv->tv_usec / 1000000.0) * 6.0;
     minute_angle = tm->tm_min * 6.0 + second_angle / 60.0;
-    hour_angle = tm->tm_hour * 30.0 + minute_angle / 60.0;
+    hour_angle = tm->tm_hour * 30.0 + minute_angle / 12.0;
 
     cairo_save (cr);
     {
@@ -365,6 +362,10 @@ main_x (int width, int height)
     int scr = DefaultScreen (dpy);
     Window root = RootWindow (dpy, scr);
     Visual *visual = find_argb_visual (dpy, scr);
+    XWMHints	    *wmhints;
+    XSizeHints	    *normalhints;
+    XClassHint	    *classhint;
+    char	    *name;
     XSetWindowAttributes wattr;
     unsigned long wmask;
     int	    depth;
@@ -395,6 +396,30 @@ main_x (int width, int height)
     wmask = CWEventMask | CWBackPixel | CWBorderPixel | CWColormap;
     w = XCreateWindow (dpy, root, 0, 0, width, height, 0,
 		       depth, InputOutput, visual, wmask, &wattr);
+    
+    name = "fdclock";
+    
+    normalhints = XAllocSizeHints ();
+    normalhints->flags = 0;
+    normalhints->x = 0;
+    normalhints->y = 0;
+    normalhints->width = width;
+    normalhints->height = height;
+
+    classhint = XAllocClassHint ();
+    classhint->res_name = "fdclock";
+    classhint->res_class = "Fdclock";
+    
+    wmhints = XAllocWMHints ();
+    wmhints->flags = InputHint;
+    wmhints->input = True;
+    
+    Xutf8SetWMProperties (dpy, w, name, name, 0, 0, 
+			  normalhints, wmhints, classhint);
+    XFree (wmhints);
+    XFree (classhint);
+    XFree (normalhints);
+    
     XMapWindow (dpy, w);
     gcv.graphics_exposures = False;
     gc = XCreateGC (dpy, w, GCGraphicsExposures, &gcv);
@@ -457,11 +482,27 @@ main_x (int width, int height)
 		else
 		    cairo_set_rgb_color (cr, 1, 1, 1);
 		    
+		cairo_set_operator (cr, CAIRO_OPERATOR_SRC);
 		cairo_rectangle (cr, 0, 0, width, height);
 		cairo_fill (cr);
+		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 		cairo_set_alpha (cr, 1);
 		draw_clock (cr, width, height);
 		cairo_set_target_surface (cr, surface);
+		if (depth == 32)
+		{
+		    cairo_set_rgb_color (cr, 0, 0, 0);
+		    cairo_set_alpha (cr, 0);
+		}
+		else
+		    cairo_set_rgb_color (cr, 1, 1, 1);
+		    
+		cairo_set_operator (cr, CAIRO_OPERATOR_SRC);
+		cairo_rectangle (cr, 0, 0, width, height);
+		cairo_fill (cr);
+		
+		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+
 		cairo_set_alpha (cr, 0.8);
 		cairo_show_surface (cr, temp, width, height);
 		cairo_surface_destroy (temp);

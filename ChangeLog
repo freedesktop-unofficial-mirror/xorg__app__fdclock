@@ -1,4 +1,12 @@
 2003-12-01  Keith Packard  <keithp@keithp.com>
 
+	* fdclock.c: (draw_time), (main_x):
+	Shrink default size to 150x150.
+	Fix hour adjustment for minute angle.
+	Add WMProperties.
+	Clear temporary surfaces using CAIRO_OPERATOR_SRC.
+
+2003-12-01  Keith Packard  <keithp@keithp.com>
+
 	* fdclock.c: (find_argb_visual), (main_x):
 	Make clock translucent using ARGB visual where available.
