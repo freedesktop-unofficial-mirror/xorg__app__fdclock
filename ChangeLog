@@ -2,6 +2,7 @@
 
 	* Makefile.am, configure.ac: Autoconfiscate.
 	* NEWS, README, AUTHORS: New files.
+	* Makefile: Deleted.
 
 2003-12-10  Carl Worth  <cworth@east.isi.edu>
 
