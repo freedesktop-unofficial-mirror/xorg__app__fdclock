@@ -23,7 +23,6 @@
  */
 
 #include <cairo.h>
-#include <cairo-xlib.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrender.h>
 #include <sys/poll.h>
