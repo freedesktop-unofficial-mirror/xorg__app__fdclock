@@ -24,358 +24,134 @@
 
 #include <cairo.h>
 #include <cairo-xlib.h>
-#include <math.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrender.h>
-#include <sys/time.h>
-#include <time.h>
 #include <sys/poll.h>
+#include <unistd.h>
+#include "fdface.h"
+#include "fdhand.h"
+#include "findargb.h"
 
-void
-draw_boundary (cairo_t *cr)
-{
-    cairo_move_to      (cr,  63.000,  36.000);
-    
-    cairo_curve_to     (cr,  63.000,  43.000,
-			     58.000,  47.000,
-			     51.000,  47.000);
-
-    cairo_line_to      (cr,   13.000,  47.000);
-    
-    cairo_curve_to     (cr,    6.000,  47.000,
-			       1.000,  43.000,
-			       1.000,  36.000);
-			   
-    cairo_line_to      (cr,    1.000,  12.000);
-    
-    cairo_curve_to     (cr,    1.000,  5.000,
-			       6.000,  1.000,
-			      13.000,  1.000);
-    
-    cairo_line_to      (cr,   51.000,  1.000);
-    
-    cairo_curve_to     (cr,   58.000,  1.000,
-			      63.000,  5.000,
-			      63.000,  12.000);
-    cairo_close_path (cr);
-}
-
-void
-draw_outline (cairo_t *cr)
-{
-    cairo_set_rgb_color (cr, 0.73, 0.73, 0.73);
-    cairo_set_line_width (cr, 2);
-    draw_boundary (cr);
-    cairo_stroke (cr);
-}
-
-void
-draw_background (cairo_t *cr)
-{
-    cairo_save (cr);
-    cairo_set_rgb_color (cr, 0.231, 0.502, 0.682);
-    cairo_translate (cr, 3.5, 3.5);
-    cairo_scale (cr, 0.887, 0.848);
-    draw_boundary (cr);
-    cairo_fill (cr);
-    cairo_restore (cr);
-}
-
-void
-draw_window (cairo_t *cr)
-{
-    cairo_move_to (cr,  -6.00, -7.125);
-    
-    cairo_line_to (cr,   6.00, -7.125);
-    
-    cairo_curve_to (cr,  8.00, -7.125,
-			 9.00, -6.125,
-			 9.00, -4.125);
-    
-    cairo_line_to (cr,   9.00,  4.125);
-
-    cairo_curve_to (cr,  9.00,  6.125,
-			 8.00,  7.125,
-			 6.00,  7.125);
-
-    cairo_line_to (cr,  -6.00,  7.125);
-
-    cairo_curve_to (cr, -8.00,  7.125,
-			-9.00,  6.125,
-			-9.00,  4.125);
-
-    cairo_line_to (cr,	-9.00, -4.125);
-
-    cairo_curve_to (cr,	-9.00, -6.125,
-			-8.00, -7.125,
-			-6.00, -7.125);
-    cairo_close_path (cr);
-}
-
-void
-draw_window_at (cairo_t *cr, double x, double y, double scale)
-{
-    cairo_save (cr);
-    {
-	cairo_translate (cr, x, y);
-	cairo_scale (cr, scale, scale);
-	draw_window (cr);
-	cairo_save (cr);
-	{
-	    cairo_set_rgb_color (cr, 1, 1, 1);
-	    cairo_fill (cr);
-	}
-	cairo_restore (cr);
-	cairo_set_rgb_color (cr, 0.231, 0.502, 0.682);
-	cairo_scale (cr, 1/scale, 1/scale);
-	cairo_stroke (cr);
-    }
-    cairo_restore (cr);
-}
-
-void
-draw_windows (cairo_t *cr)
-{
-    cairo_save (cr);
-    {
-	cairo_move_to (cr, 18.00, 16.125);
-	cairo_line_to (cr, 48.25, 20.375);
-	cairo_line_to (cr, 30.25, 35.825);
-	cairo_close_path (cr);
-	cairo_set_rgb_color (cr, 1, 1, 1);
-	cairo_set_alpha (cr, 0.5);
-	cairo_stroke (cr);
-    }
-    cairo_restore (cr);
-    draw_window_at (cr, 18.00, 16.125, 1);
-    draw_window_at (cr, 48.25, 20.375, 0.8);
-    draw_window_at (cr, 30.25, 35.825, 0.5);
-}
-
-#define ROT_X_FACTOR	1.086
-#define ROT_Y_FACTOR	1.213
-#define NWIDTH	(64 * ROT_X_FACTOR)
-#define NHEIGHT	(48 * ROT_Y_FACTOR)
 #define CLOCK_WIDTH	150
 #define CLOCK_HEIGHT	150
 
-void
-draw_logo (cairo_t *cr, double width, double height)
-{
-    double  x_scale, y_scale, scale, x_off, y_off;
-    cairo_save (cr);
-    x_scale = width / NWIDTH;
-    y_scale = height / NHEIGHT;
-    scale = x_scale < y_scale ? x_scale : y_scale;
-    x_off = (width - (scale * NWIDTH)) / 2;
-    y_off = (height - (scale * NHEIGHT)) / 2;
-    cairo_translate (cr, x_off, y_off);
-    cairo_scale (cr, scale, scale);
-    
-    cairo_translate (cr, -2.5, 14.75);
-    cairo_rotate (cr, -0.274990703529840);
-    
-    draw_outline (cr);
-    draw_background (cr);
-    draw_windows (cr);
-    cairo_restore (cr);
-}
-
-void
-draw_fancy_tick (cairo_t *cr, double radius)
+static void
+clear (cairo_t	*cr, double width, double height, double alpha)
 {
     cairo_save (cr);
-    cairo_arc (cr, 0, 0, radius, 0, 2 * M_PI);
-    cairo_set_rgb_color (cr, 0.231, 0.502, 0.682);
-    cairo_fill (cr);
-    cairo_set_rgb_color (cr, 0.73, 0.73, 0.73);
-    cairo_set_line_width (cr, radius * 2 / 3);
-    cairo_arc (cr, 0, 0, radius * 2, 0, 2 * M_PI);
-    cairo_stroke (cr);
-    cairo_restore (cr);
-}
-
-void
-draw_plain_tick (cairo_t *cr, double radius)
-{
-    cairo_save (cr);
-    cairo_arc (cr, 0, 0, radius, 0, 2 * M_PI);
-    cairo_set_rgb_color (cr, 0.231, 0.502, 0.682);
+    cairo_set_rgb_color (cr, 1, 1, 1);
+    cairo_set_alpha (cr, alpha);
+    cairo_set_operator (cr, CAIRO_OPERATOR_SRC);
+    cairo_rectangle (cr, 0, 0, width, height);
     cairo_fill (cr);
     cairo_restore (cr);
 }
-
-#define PI_6	(M_PI/6.0)
-
-void
-draw_hand_helper (cairo_t *cr, double width, double length)
-{
-    double  r = width / 2;
-    cairo_move_to (cr,	length,		    -r);
-    cairo_arc (cr,	length,		    0,		r, -M_PI_2, M_PI_2);
-    cairo_line_to (cr,	width * M_SQRT2,    r);
-    cairo_arc (cr,	0,		    0,		r*2, PI_6, M_PI - PI_6);
-    cairo_line_to (cr,	-length / 10,	    r);
-    cairo_arc (cr,	-length / 10,	    0,		r, M_PI_2, -M_PI_2);
-    cairo_line_to (cr,	-width * M_SQRT2,   -r);
-    cairo_arc (cr,	0,		    0,		r*2, M_PI + PI_6, -PI_6);
-    cairo_close_path (cr);
-}
-
-void
-draw_hand (cairo_t *cr, double angle, double width, double length, double alt)
-{
-    cairo_save (cr);
-    {
-	cairo_translate (cr, alt, alt);
-	cairo_rotate (cr, angle);
-	draw_hand_helper (cr, width, length);
-	cairo_set_rgb_color (cr, 0, 0, 0);
-	cairo_set_alpha (cr, 0.5);
-	cairo_fill (cr);
-    }
-    cairo_restore (cr);
-    cairo_save (cr);
-    {
-	cairo_rotate (cr, angle);
-	cairo_set_rgb_color (cr, 0, 0, 0);
-	draw_hand_helper (cr, width, length);
-	cairo_fill (cr);
-    }
-    cairo_restore (cr);
-}
-
-void
-draw_time (cairo_t *cr, double width, double height, struct timeval *tv)
-{
-    double  hour_angle, minute_angle, second_angle;
-    struct tm	tm_ret;
-    struct tm	*tm;
-
-    tm = localtime_r (&tv->tv_sec, &tm_ret);
     
-    second_angle = (tm->tm_sec + tv->tv_usec / 1000000.0) * 6.0;
-    minute_angle = tm->tm_min * 6.0 + second_angle / 60.0;
-    hour_angle = tm->tm_hour * 30.0 + minute_angle / 12.0;
+Pixmap
+make_background (Display *dpy, Window root, int width, int height, int depth,
+		 Visual *visual, Colormap cmap)
+{
+    cairo_t		*cr = cairo_create ();
+    cairo_surface_t	*back_surface;
+    cairo_surface_t	*temp_surface = 0;
+    Pixmap		background;
 
-    cairo_save (cr);
+    /*
+     * Background pixmap 
+     */
+    background = XCreatePixmap (dpy, root, width, height, depth);
+    back_surface = cairo_xlib_surface_create (dpy, background, visual, 0, cmap);
+
+    if (depth == 32)
     {
-	cairo_scale (cr, width, height);
-	cairo_translate (cr, 0.5, 0.5);
-	draw_hand (cr, hour_angle * M_PI / 180.0 - M_PI_2, 0.02, 0.25, 0.005);
-	draw_hand (cr, minute_angle * M_PI / 180.0 - M_PI_2, 0.01, 0.4, 0.010);
-	draw_hand (cr, second_angle * M_PI / 180.0 - M_PI_2, 0.005, 0.3, 0.015);
+	temp_surface = cairo_surface_create_similar (back_surface,
+						     CAIRO_FORMAT_ARGB32,
+						     width, height);
+	/*
+	 * draw the background to the temporary surface
+	 */
+    
+    
+	cairo_set_target_surface (cr, temp_surface);
     }
-    cairo_restore (cr);
-}
+    else
+	cairo_set_target_surface (cr, back_surface);
 
-void
-draw_now (cairo_t *cr, double width, double height)
-{
-    struct timeval  tv;
-    struct timezone tz;
-    gettimeofday (&tv, &tz);
+    clear (cr, width, height, temp_surface ? 0 : 1);
 
-    draw_time (cr, width, height, &tv);
-}
-
-void
-draw_clock (cairo_t *cr, double width, double height)
-{
-    double  x_off, y_off;
-    double  size;
-    int	    minute;
-
-    cairo_save (cr);
+    if (temp_surface)
     {
-	cairo_scale (cr, width, height);
 	cairo_save (cr);
 	{
-	    cairo_translate (cr, .15, .15);
-	    cairo_scale (cr, .7, .7);
-	    draw_logo (cr, 1, 1);
+	    cairo_set_rgb_color (cr, 1, 1, 1);
+	    cairo_set_alpha (cr, 0.5);
+	    cairo_scale (cr, width, height);
+	    cairo_translate (cr, 0.5, 0.5);
+	    cairo_arc (cr, 0, 0, 0.5, 0, 2 * M_PI);
+	    cairo_fill (cr);
 	}
 	cairo_restore (cr);
-	cairo_translate (cr, 0.5, 0.5);
-	cairo_scale (cr, 0.93, 0.93);
-	for (minute = 0; minute < 60; minute++)
-	{
-	    double  degrees, radians;
-	    cairo_save (cr);
-	    degrees = minute * 6.0;
-	    radians = degrees * M_PI / 180;
-	    cairo_rotate (cr, radians);
-	    cairo_translate (cr, 0, 0.5);
-	    if (minute % 15 == 0)
-		draw_fancy_tick (cr, 0.015);
-	    else if (minute % 5 == 0)
-		draw_fancy_tick (cr, 0.01);
-	    else
-		draw_plain_tick (cr, 0.01);
-	    cairo_restore (cr);
-	}
     }
-    cairo_restore (cr);
-}
 
-static Visual *
-find_argb_visual (Display *dpy, int scr)
-{
-    XVisualInfo		*xvi;
-    XVisualInfo		template;
-    int			nvi;
-    int			i;
-    XRenderPictFormat	*format;
-    Visual		*visual;
+    fdface_draw (cr, width, height);
 
-    template.screen = scr;
-    template.depth = 32;
-    template.class = TrueColor;
-    xvi = XGetVisualInfo (dpy, 
-			  VisualScreenMask |
-			  VisualDepthMask |
-			  VisualClassMask,
-			  &template,
-			  &nvi);
-    if (!xvi)
-	return 0;
-    visual = 0;
-    for (i = 0; i < nvi; i++)
+    if (temp_surface)
     {
-	format = XRenderFindVisualFormat (dpy, xvi[i].visual);
-	if (format->type == PictTypeDirect && format->direct.alphaMask)
-	{
-	    visual = xvi[i].visual;
-	    break;
-	}
-    }
+	cairo_set_target_surface (cr, back_surface);
 
-    XFree (xvi);
-    return visual;
+	clear (cr, width, height, 0);
+
+	cairo_set_alpha (cr, 0.8);
+
+	cairo_show_surface (cr, temp_surface, width, height);
+	cairo_surface_destroy (temp_surface);
+    }
+    cairo_surface_destroy (back_surface);
+    cairo_destroy (cr);
+    return background;
 }
 
 void
-main_x (int width, int height)
+main_x (char *dpy_name, char *geom, Bool seconds, Bool translucent)
 {
-    cairo_t *cr = cairo_create ();
-    Display *dpy = XOpenDisplay (0);
-    int scr = DefaultScreen (dpy);
-    Window root = RootWindow (dpy, scr);
-    Visual *visual = find_argb_visual (dpy, scr);
-    XWMHints	    *wmhints;
-    XSizeHints	    *normalhints;
-    XClassHint	    *classhint;
-    char	    *name;
-    XSetWindowAttributes wattr;
-    unsigned long wmask;
-    int	    depth;
-    Colormap cmap;
-    Window  w;
-    GC		gc;
-    XGCValues	gcv;
-    Pixmap  background = None, buffer;
-    XEvent  ev;
-    Bool paint = False;
+    Display		    *dpy;
+    int			    scr;
+    int			    x = 0, y = 0;
+    int			    width = CLOCK_WIDTH, height = CLOCK_HEIGHT;
+    Window		    root;
+    Visual		    *visual;
+    XWMHints		    *wmhints;
+    XSizeHints		    *normalhints;
+    XClassHint		    *classhint;
+    char		    *name;
+    XSetWindowAttributes    wattr;
+    unsigned long	    wmask;
+    int			    depth;
+    Colormap		    cmap;
+    Window		    w;
+    GC			    gc;
+    XGCValues		    gcv;
+    Pixmap		    background = None, buffer;
+    XEvent		    ev;
+    Bool		    paint = False;
+    int			    timeout;
+
+    dpy = XOpenDisplay (dpy_name);
+    if (!dpy)
+    {
+	fprintf (stderr, "Cannot open display\n");
+	return;
+    }
+    
+    if (geom)
+	XParseGeometry (geom, &x, &y, &width, &height);
+
+    scr = DefaultScreen (dpy);
+    root = RootWindow (dpy, scr);
+    if (translucent)
+	visual = find_argb_visual (dpy, scr);
+    else
+	visual = 0;
     
     wattr.event_mask = (ExposureMask | StructureNotifyMask);
     if (visual)
@@ -394,15 +170,15 @@ main_x (int width, int height)
 	wattr.border_pixel = BlackPixel (dpy, scr);
     }
     wmask = CWEventMask | CWBackPixel | CWBorderPixel | CWColormap;
-    w = XCreateWindow (dpy, root, 0, 0, width, height, 0,
+    w = XCreateWindow (dpy, root, x, y, width, height, 0,
 		       depth, InputOutput, visual, wmask, &wattr);
     
     name = "fdclock";
     
     normalhints = XAllocSizeHints ();
     normalhints->flags = 0;
-    normalhints->x = 0;
-    normalhints->y = 0;
+    normalhints->x = x;
+    normalhints->y = y;
     normalhints->width = width;
     normalhints->height = height;
 
@@ -423,6 +199,10 @@ main_x (int width, int height)
     XMapWindow (dpy, w);
     gcv.graphics_exposures = False;
     gc = XCreateGC (dpy, w, GCGraphicsExposures, &gcv);
+    if (seconds)
+	timeout = 100;
+    else
+	timeout = 1000;
     for (;;)
     {
 	struct pollfd	a;
@@ -430,7 +210,7 @@ main_x (int width, int height)
 	XFlush (dpy);
 	a.fd = ConnectionNumber (dpy);
 	a.events = POLLIN;
-	if (poll (&a, 1, 100) > 0)
+	if (poll (&a, 1, timeout) > 0)
 	{
 	    do {
 		XNextEvent (dpy, &ev);
@@ -459,102 +239,67 @@ main_x (int width, int height)
 	    paint = True;
 	if (paint)
 	{
-	    cairo_surface_t	*surface;
-		
-	    if (!background)
-	    {
-		cairo_surface_t	*temp;
-		
-		background = XCreatePixmap (dpy, root,
-					    width, height, depth);
-		surface = cairo_xlib_surface_create (dpy, background,
-						     visual, 0, cmap);
-		temp = cairo_surface_create_similar (surface,
-						     CAIRO_FORMAT_ARGB32,
-						     width, height);
-		cairo_save (cr);
-		cairo_set_target_surface (cr, temp);
-		if (depth == 32)
-		{
-		    cairo_set_rgb_color (cr, 0, 0, 0);
-		    cairo_set_alpha (cr, 0);
-		}
-		else
-		    cairo_set_rgb_color (cr, 1, 1, 1);
-		    
-		cairo_set_operator (cr, CAIRO_OPERATOR_SRC);
-		cairo_rectangle (cr, 0, 0, width, height);
-		cairo_fill (cr);
-		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-		cairo_set_alpha (cr, 1);
-		draw_clock (cr, width, height);
-		cairo_set_target_surface (cr, surface);
-		if (depth == 32)
-		{
-		    cairo_set_rgb_color (cr, 0, 0, 0);
-		    cairo_set_alpha (cr, 0);
-		}
-		else
-		    cairo_set_rgb_color (cr, 1, 1, 1);
-		    
-		cairo_set_operator (cr, CAIRO_OPERATOR_SRC);
-		cairo_rectangle (cr, 0, 0, width, height);
-		cairo_fill (cr);
-		
-		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+	    cairo_surface_t	*buffer_surface;
+	    cairo_t		*cr = cairo_create ();
 
-		cairo_set_alpha (cr, 0.8);
-		cairo_show_surface (cr, temp, width, height);
-		cairo_surface_destroy (temp);
-		cairo_surface_destroy (surface);
-		cairo_restore (cr);
-	    }
+	    /*
+	     * Create a pixmap holding the background clock image
+	     * so it doesn't have to be painted every tick
+	     */
+	    if (!background)
+		background = make_background (dpy, root, width, height, depth,
+					      visual, cmap);
+	    
 	    buffer = XCreatePixmap (dpy, root,
 				    width, height, depth);
-	    surface = cairo_xlib_surface_create (dpy, buffer,
-						 visual, 0, cmap);
-	    cairo_set_target_surface (cr, surface);
-	    cairo_surface_destroy (surface);
+	    buffer_surface = cairo_xlib_surface_create (dpy, buffer,
+							visual, 0, cmap);
+	    cairo_set_target_surface (cr, buffer_surface);
 	    XCopyArea (dpy, background, buffer, gc, 
 		       0, 0, width, height, 0, 0);
-	    draw_now (cr, width, height);
+	    fdhand_draw_now (cr, width, height, seconds);
 	    XCopyArea (dpy, buffer, w, gc, 0, 0, width, height, 0, 0);
+	    cairo_surface_destroy (buffer_surface);
 	    XFreePixmap (dpy, buffer);
 	    paint = False;
+	    cairo_destroy (cr);
 	}
     }
 }
 
-
-int
-main_png (int width, int height)
-{
-    int	    stride = width * 4;
-    cairo_t *cr = cairo_create ();;
-    char    *image = calloc (stride * height, 1);
-    char    out[1024];
-    
-    cairo_set_target_image (cr, image, CAIRO_FORMAT_ARGB32,
-			    width, height, stride);
-    cairo_move_to (cr, 0, 0);
-    cairo_line_to (cr, width, 0);
-    cairo_line_to (cr, width, height);
-    cairo_line_to (cr, 0, height);
-    cairo_close_path (cr);
-    cairo_set_rgb_color (cr, 1, 1, 1);
-    cairo_fill (cr);
-    draw_clock (cr, width, height);
-    sprintf (out, "freedesktop-clock-%d.png", width);
-    write_png_argb32 (image, out, width, height, stride);
-
-    cairo_destroy (cr);
-    return 0;
-}
+extern char *optarg;
+extern int optind, opterr, optopt;
 
 int
 main (int argc, char **argv)
 {
-    main_x (CLOCK_WIDTH, CLOCK_HEIGHT);
-/*    main_png (2400, 2400); */
+    char    *dpy_name = 0;
+    char    *geom = 0;
+    Bool    seconds = False, translucent = False;
+    int	    c;
+
+    while ((c = getopt (argc, argv, "std:g:")) > 0)
+    {
+	switch (c) {
+	case 'd':
+	    dpy_name = optarg;
+	    break;
+	case 'g':
+	    geom = optarg;
+	    break;
+	case 's':
+	    seconds = True;
+	    break;
+	case 't':
+	    translucent = True;
+	    break;
+	default:
+	    fprintf (stderr, "usage: %s -st -d <dpy> -g <geom>\n", argv[0]);
+	    exit (1);
+	    break;
+	}
+    }
+    
+    main_x (dpy_name, geom, seconds, translucent);
     return 0;
 }

@@ -1,5 +1,25 @@
 2003-12-01  Keith Packard  <keithp@keithp.com>
 
+	* Makefile:
+	* fdclock.c: (clear), (make_background), (main_x), (main):
+	* fdface.c: (draw_fancy_tick), (draw_plain_tick), (fdface_draw):
+	* fdface.h:
+	* fdfacepng.c: (dump_png), (main):
+	* fdhand.c: (draw_hand_helper), (draw_hand), (draw_time),
+	(fdhand_draw_now):
+	* fdhand.h:
+	* fdlogo.c: (draw_boundary), (draw_outline), (draw_background),
+	(draw_window), (draw_window_at), (draw_windows), (fdlogo_draw):
+	* fdlogo.h:
+	* findargb.c: (find_argb_visual):
+	* findargb.h:
+	Add fdfacepng program, split clock into many files.
+	make background generation a bit more efficient for
+	opaque case.  Add translucent disc for translucent case.
+	Add options to fdclock program
+
+2003-12-01  Keith Packard  <keithp@keithp.com>
+
 	* fdclock.c: (draw_time), (main_x):
 	Shrink default size to 150x150.
 	Fix hour adjustment for minute angle.
