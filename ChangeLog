@@ -1,0 +1,6 @@
+2003-12-01  Carl Worth  <cworth@isi.edu>
+
+	* fdclock.c (draw_hand): Draw shadow before hand so that it
+	appears "under" the hand at least somewhat. Still requires a black
+	hand to look decent.
+

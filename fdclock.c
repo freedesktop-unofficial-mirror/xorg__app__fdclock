@@ -229,19 +229,19 @@ draw_hand (cairo_t *cr, double angle, double width, double length, double alt)
 {
     cairo_save (cr);
     {
-	cairo_rotate (cr, angle);
-	cairo_set_rgb_color (cr, 0, 0, 0);
-	draw_hand_helper (cr, width, length);
-	cairo_fill (cr);
-    }
-    cairo_restore (cr);
-    cairo_save (cr);
-    {
 	cairo_translate (cr, alt, alt);
 	cairo_rotate (cr, angle);
 	draw_hand_helper (cr, width, length);
 	cairo_set_rgb_color (cr, 0, 0, 0);
 	cairo_set_alpha (cr, 0.5);
+	cairo_fill (cr);
+    }
+    cairo_restore (cr);
+    cairo_save (cr);
+    {
+	cairo_rotate (cr, angle);
+	cairo_set_rgb_color (cr, 0, 0, 0);
+	draw_hand_helper (cr, width, length);
 	cairo_fill (cr);
     }
     cairo_restore (cr);
