@@ -49,7 +49,7 @@ clear (cairo_t	*cr, double width, double height, double alpha)
     
 Pixmap
 make_background (Display *dpy, Window root, int width, int height, int depth,
-		 Visual *visual, Colormap cmap)
+		 Visual *visual, Colormap cmap, Bool opaque)
 {
     cairo_t		*cr = cairo_create ();
     cairo_surface_t	*back_surface;
@@ -71,7 +71,6 @@ make_background (Display *dpy, Window root, int width, int height, int depth,
 	 * draw the background to the temporary surface
 	 */
     
-    
 	cairo_set_target_surface (cr, temp_surface);
     }
     else
@@ -84,7 +83,7 @@ make_background (Display *dpy, Window root, int width, int height, int depth,
 	cairo_save (cr);
 	{
 	    cairo_set_rgb_color (cr, 1, 1, 1);
-	    cairo_set_alpha (cr, 0.5);
+	    cairo_set_alpha (cr, opaque ? 1 : 0.5);
 	    cairo_scale (cr, width, height);
 	    cairo_translate (cr, 0.5, 0.5);
 	    cairo_arc (cr, 0, 0, 0.5, 0, 2 * M_PI);
@@ -101,7 +100,7 @@ make_background (Display *dpy, Window root, int width, int height, int depth,
 
 	clear (cr, width, height, 0);
 
-	cairo_set_alpha (cr, 0.8);
+	cairo_set_alpha (cr, opaque ? 1 : 0.8);
 
 	cairo_show_surface (cr, temp_surface, width, height);
 	cairo_surface_destroy (temp_surface);
@@ -112,7 +111,8 @@ make_background (Display *dpy, Window root, int width, int height, int depth,
 }
 
 void
-main_x (char *dpy_name, char *geom, Bool seconds, Bool translucent, Bool square)
+main_x (char *dpy_name, char *geom, Bool seconds, 
+	Bool translucent, Bool square, Bool opaque)
 {
     Display		    *dpy;
     int			    scr;
@@ -259,7 +259,7 @@ main_x (char *dpy_name, char *geom, Bool seconds, Bool translucent, Bool square)
 	     */
 	    if (!background)
 		background = make_background (dpy, root, u_width, u_height, depth,
- 					      visual, cmap);
+ 					      visual, cmap, opaque);
 	    
 	    buffer = XCreatePixmap (dpy, root,
 				    u_width, u_height, depth);
@@ -286,10 +286,10 @@ main (int argc, char **argv)
 {
     char    *dpy_name = 0;
     char    *geom = 0;
-    Bool    seconds = False, translucent = False, square = False;
+    Bool    seconds = False, translucent = False, square = False, opaque = False;
     int	    c;
 
-    while ((c = getopt (argc, argv, "stad:g:")) > 0)
+    while ((c = getopt (argc, argv, "staod:g:")) > 0)
     {
 	switch (c) {
 	case 'd':
@@ -303,6 +303,11 @@ main (int argc, char **argv)
 	    break;
 	case 't':
 	    translucent = True;
+	    opaque = False;
+	    break;
+	case 'o':
+	    translucent = True;
+	    opaque = True;
 	    break;
 	case 'a':
 	    square = True;
@@ -314,6 +319,6 @@ main (int argc, char **argv)
 	}
     }
     
-    main_x (dpy_name, geom, seconds, translucent, square);
+    main_x (dpy_name, geom, seconds, translucent, square, opaque);
     return 0;
 }

@@ -1,5 +1,10 @@
 2003-12-02  Keith Packard  <keithp@keithp.com>
 
+	* fdclock.c: (make_background), (main_x), (main):
+	Add '-o' flag to make an ARGB32 clock that is opaque in the middle.
+
+2003-12-02  Keith Packard  <keithp@keithp.com>
+
 	* fdclock.c: (main_x), (main):
 	Add '-a' ratio to preserve 1-1 aspect ratio.
 	
