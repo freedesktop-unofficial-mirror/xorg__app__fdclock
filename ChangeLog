@@ -1,3 +1,12 @@
+2003-12-02  Keith Packard  <keithp@keithp.com>
+
+	* fdclock.c: (main_x), (main):
+	Add '-a' ratio to preserve 1-1 aspect ratio.
+	
+	* fdhand.c: (draw_hour), (draw_minute), (draw_second), (draw_hand),
+	(draw_time):
+	Make hands look more like physical clock.
+
 2003-12-01  Keith Packard  <keithp@keithp.com>
 
 	* fdclock.c: (main_x):

@@ -112,7 +112,7 @@ make_background (Display *dpy, Window root, int width, int height, int depth,
 }
 
 void
-main_x (char *dpy_name, char *geom, Bool seconds, Bool translucent)
+main_x (char *dpy_name, char *geom, Bool seconds, Bool translucent, Bool square)
 {
     Display		    *dpy;
     int			    scr;
@@ -229,6 +229,7 @@ main_x (char *dpy_name, char *geom, Bool seconds, Bool translucent)
 			    XFreePixmap (dpy, background);
 			    background = None;
 			}
+			XClearArea (dpy, w, 0, 0, 0, 0, False);
 			paint = True;
 		    }
 		    break;
@@ -240,24 +241,36 @@ main_x (char *dpy_name, char *geom, Bool seconds, Bool translucent)
 	if (paint)
 	{
 	    cairo_surface_t	*buffer_surface;
+	    int    		x_off = 0, y_off = 0;
+	    int    		u_width = width, u_height = height;
 
+	    if (square)
+	    {
+		if (width < height)
+		    u_width = u_height = width;
+		else
+		    u_width = u_height = height;
+		x_off = (width - u_width) / 2;
+		y_off = (height - u_height) / 2;
+	    }
 	    /*
 	     * Create a pixmap holding the background clock image
 	     * so it doesn't have to be painted every tick
 	     */
 	    if (!background)
-		background = make_background (dpy, root, width, height, depth,
-					      visual, cmap);
+		background = make_background (dpy, root, u_width, u_height, depth,
+ 					      visual, cmap);
 	    
 	    buffer = XCreatePixmap (dpy, root,
-				    width, height, depth);
+				    u_width, u_height, depth);
 	    buffer_surface = cairo_xlib_surface_create (dpy, buffer,
 							visual, 0, cmap);
 	    cairo_set_target_surface (cr, buffer_surface);
 	    XCopyArea (dpy, background, buffer, gc, 
-		       0, 0, width, height, 0, 0);
-	    fdhand_draw_now (cr, width, height, seconds);
-	    XCopyArea (dpy, buffer, w, gc, 0, 0, width, height, 0, 0);
+		       0, 0, u_width, u_height, 0, 0);
+	    fdhand_draw_now (cr, u_width, u_height, seconds);
+	    XCopyArea (dpy, buffer, w, gc, 
+		       0, 0, u_width, u_height, x_off, y_off);
 	    cairo_surface_destroy (buffer_surface);
 	    XFreePixmap (dpy, buffer);
 	    paint = False;
@@ -273,10 +286,10 @@ main (int argc, char **argv)
 {
     char    *dpy_name = 0;
     char    *geom = 0;
-    Bool    seconds = False, translucent = False;
+    Bool    seconds = False, translucent = False, square = False;
     int	    c;
 
-    while ((c = getopt (argc, argv, "std:g:")) > 0)
+    while ((c = getopt (argc, argv, "stad:g:")) > 0)
     {
 	switch (c) {
 	case 'd':
@@ -291,13 +304,16 @@ main (int argc, char **argv)
 	case 't':
 	    translucent = True;
 	    break;
+	case 'a':
+	    square = True;
+	    break;
 	default:
-	    fprintf (stderr, "usage: %s -st -d <dpy> -g <geom>\n", argv[0]);
+	    fprintf (stderr, "usage: %s -sta -d <dpy> -g <geom>\n", argv[0]);
 	    exit (1);
 	    break;
 	}
     }
     
-    main_x (dpy_name, geom, seconds, translucent);
+    main_x (dpy_name, geom, seconds, translucent, square);
     return 0;
 }

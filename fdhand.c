@@ -30,44 +30,65 @@
 #define PI_6	(M_PI/6.0)
 
 static void
-draw_hand_helper (cairo_t *cr, double width, double length, int draw_disc)
+draw_hour (cairo_t *cr, double width, double length)
 {
     double  r = width / 2;
     cairo_move_to (cr,	length,		    -r);
-    cairo_arc (cr,	length,		    0,		r, -M_PI_2, M_PI_2);
-    if (draw_disc)
-    {
-	cairo_line_to (cr,  width * M_SQRT2,    r);
-	cairo_arc (cr,	0,		    0,		r*2, PI_6, M_PI - PI_6);
-    }
-    cairo_line_to (cr,	-length / 10,	    r);
-    cairo_arc (cr,	-length / 10,	    0,		r, M_PI_2, -M_PI_2);
-    if (draw_disc)
-    {
-	cairo_line_to (cr,	-width * M_SQRT2,   -r);
-	cairo_arc (cr,	0,		    0,		r*2, M_PI + PI_6, -PI_6);
-    }
+    cairo_arc     (cr,	length,		    0,		r, -M_PI_2, M_PI_2);
+    cairo_line_to (cr,  width * M_SQRT2,    r);
+    cairo_arc     (cr,	0,		    0,		r*2, PI_6, - PI_6);
     cairo_close_path (cr);
 }
 
 static void
-draw_hand (cairo_t *cr, double angle, double width, double length, double alt, int draw_disc)
+draw_minute (cairo_t *cr, double width, double length)
+{
+    double  r = width / 2;
+    cairo_move_to (cr,	length,		    -r);
+    cairo_arc     (cr,	length,		    0,		r, -M_PI_2, M_PI_2);
+    cairo_line_to (cr,  0,		    r);
+    cairo_line_to (cr,	0,		    -r);
+    cairo_close_path (cr);
+}
+
+static void
+draw_second (cairo_t *cr, double width, double length)
+{
+    double  r = width / 2;
+    double  thick = width;
+    double  back = length / 3;
+    double  back_thin = length / 10;
+
+    cairo_move_to (cr,	length,		    -r);
+    cairo_arc     (cr,	length,		    0,		r, -M_PI_2, M_PI_2);
+    cairo_line_to (cr,  -back_thin,    	    r);
+    cairo_line_to (cr,  -back_thin,	    thick);
+    cairo_line_to (cr,	-back,		    thick);
+    cairo_line_to (cr,	-back,		    -thick);
+    cairo_line_to (cr,	-back_thin,	    -thick);
+    cairo_line_to (cr,	-back_thin,	    -r);
+    cairo_close_path (cr);
+}
+
+static void
+draw_hand (cairo_t *cr, double angle, double width, double length, double alt,
+	   void (*draw) (cairo_t *cr, double width, double length))
 {
     cairo_save (cr);
     {
-	cairo_translate (cr, alt, alt);
+	cairo_translate (cr, alt/2, alt);
 	cairo_rotate (cr, angle);
-	draw_hand_helper (cr, width, length, draw_disc);
+	(*draw) (cr, width, length);
 	cairo_set_rgb_color (cr, 0, 0, 0);
-	cairo_set_alpha (cr, 0.5);
+	cairo_set_alpha (cr, 0.3);
 	cairo_fill (cr);
     }
     cairo_restore (cr);
     cairo_save (cr);
     {
 	cairo_rotate (cr, angle);
+	(*draw) (cr, width, length);
 	cairo_set_rgb_color (cr, 0, 0, 0);
-	draw_hand_helper (cr, width, length, draw_disc);
 	cairo_fill (cr);
     }
     cairo_restore (cr);
@@ -90,10 +111,13 @@ draw_time (cairo_t *cr, double width, double height, struct timeval *tv, int sec
     {
 	cairo_scale (cr, width, height);
 	cairo_translate (cr, 0.5, 0.5);
-	draw_hand (cr, hour_angle * M_PI / 180.0 - M_PI_2, 0.03, 0.25, 0.005, 1);
-	draw_hand (cr, minute_angle * M_PI / 180.0 - M_PI_2, 0.02, 0.4, 0.010, 0);
+	draw_hand (cr, hour_angle * M_PI / 180.0 - M_PI_2,
+		   0.03, 0.25, 0.010, draw_hour);
+	draw_hand (cr, minute_angle * M_PI / 180.0 - M_PI_2,
+		   0.015, 0.39, 0.020, draw_minute);
 	if (seconds)
-	    draw_hand (cr, second_angle * M_PI / 180.0 - M_PI_2, 0.01, 0.3, 0.015, 0);
+	    draw_hand (cr, second_angle * M_PI / 180.0 - M_PI_2,
+		       0.0075, 0.32, 0.026, draw_second);
     }
     cairo_restore (cr);
 }
