@@ -43,7 +43,7 @@ draw_plain_tick (cairo_t *cr, double radius)
 {
     cairo_save (cr);
     cairo_arc (cr, 0, 0, radius, 0, 2 * M_PI);
-    cairo_set_rgb_color (cr, 0.231, 0.502, 0.682);
+    cairo_set_rgb_color (cr, 0.73, 0.73, 0.73);
     cairo_fill (cr);
     cairo_restore (cr);
 }

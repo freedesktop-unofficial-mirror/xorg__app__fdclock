@@ -26,6 +26,7 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrender.h>
 #include <sys/poll.h>
+#include <math.h>
 #include <unistd.h>
 #include "fdface.h"
 #include "fdhand.h"

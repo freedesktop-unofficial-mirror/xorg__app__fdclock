@@ -71,28 +71,31 @@ draw_second (cairo_t *cr, double width, double length)
 }
 
 static void
-draw_hand (cairo_t *cr, double angle, double width, double length, double alt,
+draw_hand (cairo_t *cr, double noon_deg, double width, double length, double alt,
 	   void (*draw) (cairo_t *cr, double width, double length))
 {
-    cairo_save (cr);
+    cairo_matrix_t  *m = cairo_matrix_create ();
+    cairo_current_matrix (cr, m);
     {
 	cairo_translate (cr, alt/2, alt);
-	cairo_rotate (cr, angle);
+	cairo_rotate (cr, noon_deg * M_PI / 180.0 - M_PI_2);
 	(*draw) (cr, width, length);
-	cairo_set_rgb_color (cr, 0, 0, 0);
-	cairo_set_alpha (cr, 0.3);
-	cairo_fill (cr);
     }
-    cairo_restore (cr);
-    cairo_save (cr);
-    {
-	cairo_rotate (cr, angle);
-	(*draw) (cr, width, length);
-	cairo_set_rgb_color (cr, 0, 0, 0);
-	cairo_fill (cr);
-    }
-    cairo_restore (cr);
+    cairo_set_matrix (cr, m);
+    cairo_matrix_destroy (m);
 }
+
+#define HOUR_WIDTH	0.03
+#define HOUR_LENGTH	0.25
+#define HOUR_ALT	0.010
+
+#define MINUTE_WIDTH	0.015
+#define MINUTE_LENGTH	0.39
+#define MINUTE_ALT	0.020
+
+#define SECOND_WIDTH	0.0075
+#define SECOND_LENGTH	0.32
+#define SECOND_ALT	0.026
 
 static void
 draw_time (cairo_t *cr, double width, double height, struct timeval *tv, int seconds)
@@ -100,7 +103,6 @@ draw_time (cairo_t *cr, double width, double height, struct timeval *tv, int sec
     double  hour_angle, minute_angle, second_angle;
     struct tm	tm_ret;
     struct tm	*tm;
-
     tm = localtime_r (&tv->tv_sec, &tm_ret);
     
     second_angle = (tm->tm_sec + tv->tv_usec / 1000000.0) * 6.0;
@@ -111,13 +113,29 @@ draw_time (cairo_t *cr, double width, double height, struct timeval *tv, int sec
     {
 	cairo_scale (cr, width, height);
 	cairo_translate (cr, 0.5, 0.5);
-	draw_hand (cr, hour_angle * M_PI / 180.0 - M_PI_2,
-		   0.03, 0.25, 0.010, draw_hour);
-	draw_hand (cr, minute_angle * M_PI / 180.0 - M_PI_2,
-		   0.015, 0.39, 0.020, draw_minute);
+	draw_hand (cr, hour_angle, HOUR_WIDTH, HOUR_LENGTH, 
+		   HOUR_ALT, draw_hour);
+	draw_hand (cr, minute_angle, MINUTE_WIDTH, MINUTE_LENGTH,
+		   MINUTE_ALT, draw_minute);
 	if (seconds)
-	    draw_hand (cr, second_angle * M_PI / 180.0 - M_PI_2,
-		       0.0075, 0.32, 0.026, draw_second);
+	    draw_hand (cr, second_angle, SECOND_WIDTH, SECOND_LENGTH,
+		       SECOND_ALT, draw_second);
+	cairo_set_rgb_color (cr, 0, 0, 0);
+	cairo_set_alpha (cr, 0.3);
+	cairo_fill (cr);
+	
+	cairo_set_rgb_color (cr, 0, 0, 0);
+	cairo_set_alpha (cr, 1);
+	draw_hand (cr, hour_angle, HOUR_WIDTH, HOUR_LENGTH, 
+		   0.0, draw_hour);
+	cairo_fill (cr);
+	draw_hand (cr, minute_angle, MINUTE_WIDTH, MINUTE_LENGTH,
+		   0.0, draw_minute);
+	cairo_fill (cr);
+	if (seconds)
+	    draw_hand (cr, second_angle, SECOND_WIDTH, SECOND_LENGTH,
+		       0.0, draw_second);
+	cairo_fill (cr);
     }
     cairo_restore (cr);
 }
