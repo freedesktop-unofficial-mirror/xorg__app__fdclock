@@ -1,5 +1,14 @@
 2003-12-01  Keith Packard  <keithp@keithp.com>
 
+	* fdclock.c: (main_x):
+	Keep cairo_t around (creating them turns out to be expensive)
+	Use XEventsQueued instead of XFlush to avoid lost queued events
+
+	* fdhand.c: (draw_hand_helper), (draw_hand), (draw_time):
+	Eliminate discs from minute/second hand as wasted computation.
+
+2003-12-01  Keith Packard  <keithp@keithp.com>
+
 	* Makefile:
 	* fdclock.c: (clear), (make_background), (main_x), (main):
 	* fdface.c: (draw_fancy_tick), (draw_plain_tick), (fdface_draw):

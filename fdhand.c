@@ -30,28 +30,34 @@
 #define PI_6	(M_PI/6.0)
 
 static void
-draw_hand_helper (cairo_t *cr, double width, double length)
+draw_hand_helper (cairo_t *cr, double width, double length, int draw_disc)
 {
     double  r = width / 2;
     cairo_move_to (cr,	length,		    -r);
     cairo_arc (cr,	length,		    0,		r, -M_PI_2, M_PI_2);
-    cairo_line_to (cr,	width * M_SQRT2,    r);
-    cairo_arc (cr,	0,		    0,		r*2, PI_6, M_PI - PI_6);
+    if (draw_disc)
+    {
+	cairo_line_to (cr,  width * M_SQRT2,    r);
+	cairo_arc (cr,	0,		    0,		r*2, PI_6, M_PI - PI_6);
+    }
     cairo_line_to (cr,	-length / 10,	    r);
     cairo_arc (cr,	-length / 10,	    0,		r, M_PI_2, -M_PI_2);
-    cairo_line_to (cr,	-width * M_SQRT2,   -r);
-    cairo_arc (cr,	0,		    0,		r*2, M_PI + PI_6, -PI_6);
+    if (draw_disc)
+    {
+	cairo_line_to (cr,	-width * M_SQRT2,   -r);
+	cairo_arc (cr,	0,		    0,		r*2, M_PI + PI_6, -PI_6);
+    }
     cairo_close_path (cr);
 }
 
 static void
-draw_hand (cairo_t *cr, double angle, double width, double length, double alt)
+draw_hand (cairo_t *cr, double angle, double width, double length, double alt, int draw_disc)
 {
     cairo_save (cr);
     {
 	cairo_translate (cr, alt, alt);
 	cairo_rotate (cr, angle);
-	draw_hand_helper (cr, width, length);
+	draw_hand_helper (cr, width, length, draw_disc);
 	cairo_set_rgb_color (cr, 0, 0, 0);
 	cairo_set_alpha (cr, 0.5);
 	cairo_fill (cr);
@@ -61,7 +67,7 @@ draw_hand (cairo_t *cr, double angle, double width, double length, double alt)
     {
 	cairo_rotate (cr, angle);
 	cairo_set_rgb_color (cr, 0, 0, 0);
-	draw_hand_helper (cr, width, length);
+	draw_hand_helper (cr, width, length, draw_disc);
 	cairo_fill (cr);
     }
     cairo_restore (cr);
@@ -84,10 +90,10 @@ draw_time (cairo_t *cr, double width, double height, struct timeval *tv, int sec
     {
 	cairo_scale (cr, width, height);
 	cairo_translate (cr, 0.5, 0.5);
-	draw_hand (cr, hour_angle * M_PI / 180.0 - M_PI_2, 0.02, 0.25, 0.005);
-	draw_hand (cr, minute_angle * M_PI / 180.0 - M_PI_2, 0.01, 0.4, 0.010);
+	draw_hand (cr, hour_angle * M_PI / 180.0 - M_PI_2, 0.03, 0.25, 0.005, 1);
+	draw_hand (cr, minute_angle * M_PI / 180.0 - M_PI_2, 0.02, 0.4, 0.010, 0);
 	if (seconds)
-	    draw_hand (cr, second_angle * M_PI / 180.0 - M_PI_2, 0.005, 0.3, 0.015);
+	    draw_hand (cr, second_angle * M_PI / 180.0 - M_PI_2, 0.01, 0.3, 0.015, 0);
     }
     cairo_restore (cr);
 }

@@ -135,7 +135,8 @@ main_x (char *dpy_name, char *geom, Bool seconds, Bool translucent)
     XEvent		    ev;
     Bool		    paint = False;
     int			    timeout;
-
+    cairo_t		    *cr = cairo_create ();
+    
     dpy = XOpenDisplay (dpy_name);
     if (!dpy)
     {
@@ -207,10 +208,9 @@ main_x (char *dpy_name, char *geom, Bool seconds, Bool translucent)
     {
 	struct pollfd	a;
 
-	XFlush (dpy);
 	a.fd = ConnectionNumber (dpy);
 	a.events = POLLIN;
-	if (poll (&a, 1, timeout) > 0)
+	if (XEventsQueued (dpy, QueuedAfterFlush) || poll (&a, 1, timeout) > 0)
 	{
 	    do {
 		XNextEvent (dpy, &ev);
@@ -240,7 +240,6 @@ main_x (char *dpy_name, char *geom, Bool seconds, Bool translucent)
 	if (paint)
 	{
 	    cairo_surface_t	*buffer_surface;
-	    cairo_t		*cr = cairo_create ();
 
 	    /*
 	     * Create a pixmap holding the background clock image
@@ -262,7 +261,6 @@ main_x (char *dpy_name, char *geom, Bool seconds, Bool translucent)
 	    cairo_surface_destroy (buffer_surface);
 	    XFreePixmap (dpy, buffer);
 	    paint = False;
-	    cairo_destroy (cr);
 	}
     }
 }
