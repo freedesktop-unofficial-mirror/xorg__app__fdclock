@@ -56,7 +56,7 @@ draw_boundary (cairo_t *cr)
 static void
 draw_outline (cairo_t *cr)
 {
-    cairo_set_rgb_color (cr, 0.73, 0.73, 0.73);
+    cairo_set_source_rgb (cr, 0.73, 0.73, 0.73);
     cairo_set_line_width (cr, 2);
     draw_boundary (cr);
     cairo_stroke (cr);
@@ -66,7 +66,7 @@ static void
 draw_background (cairo_t *cr)
 {
     cairo_save (cr);
-    cairo_set_rgb_color (cr, 0.231, 0.502, 0.682);
+    cairo_set_source_rgb (cr, 0.231, 0.502, 0.682);
     cairo_translate (cr, 3.5, 3.5);
     cairo_scale (cr, 0.887, 0.848);
     draw_boundary (cr);
@@ -115,18 +115,18 @@ draw_window_at (cairo_t *cr, double x, double y, double scale)
 	draw_window (cr);
 	cairo_save (cr);
 	{
-	    cairo_set_rgb_color (cr, 1, 1, 1);
+	    cairo_set_source_rgb (cr, 1, 1, 1);
 	    cairo_fill (cr);
 	}
 	cairo_restore (cr);
-	cairo_set_rgb_color (cr, 0.231, 0.502, 0.682);
+	cairo_set_source_rgb (cr, 0.231, 0.502, 0.682);
 	cairo_scale (cr, 1/scale, 1/scale);
 	cairo_stroke (cr);
     }
     cairo_restore (cr);
 }
 
-void
+static void
 draw_windows (cairo_t *cr)
 {
     cairo_save (cr);
@@ -135,8 +135,7 @@ draw_windows (cairo_t *cr)
 	cairo_line_to (cr, 48.25, 20.375);
 	cairo_line_to (cr, 30.25, 35.825);
 	cairo_close_path (cr);
-	cairo_set_rgb_color (cr, 1, 1, 1);
-	cairo_set_alpha (cr, 0.5);
+	cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
 	cairo_stroke (cr);
     }
     cairo_restore (cr);

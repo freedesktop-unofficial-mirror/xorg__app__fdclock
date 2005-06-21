@@ -7,7 +7,7 @@ fdclock_SOURCES = \
 	$(COMMON_SRCS)
 
 fdfacepng_SOURCES = \
-	fdfacepng.c write_png.c \
+	fdfacepng.c \
 	$(COMMON_SRCS)
 
 bin_PROGRAMS = fdclock fdfacepng

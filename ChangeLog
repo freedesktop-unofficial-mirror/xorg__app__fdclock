@@ -1,3 +1,16 @@
+2005-06-20  Carl Worth  <cworth@cworth.org>
+
+	* fdclock.c: (clear), (make_background), (main_x):
+	* fdface.c: (draw_fancy_tick), (draw_plain_tick), (fdface_draw):
+	* fdfacepng.c: (dump_png):
+	* fdhand.c: (draw_hand), (draw_time), (fdhand_draw_now):
+	* fdlogo.c: (draw_outline), (draw_background), (draw_window_at),
+	(draw_windows): Update to work with cairo 0.5.0.
+
+	* Makefile.am:
+	* write_png.c:
+	* write_png.h: Remove in favor of cairo_surface_write_to_png.
+
 2004-07-19  Eric Anholt  <anholt@FreeBSD.org>
 
 	* configure.ac:

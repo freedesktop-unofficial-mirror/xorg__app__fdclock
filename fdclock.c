@@ -23,10 +23,13 @@
  */
 
 #include <cairo.h>
+#include <cairo-xlib.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrender.h>
 #include <sys/poll.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include "fdface.h"
 #include "fdhand.h"
@@ -39,28 +42,29 @@ static void
 clear (cairo_t	*cr, double width, double height, double alpha)
 {
     cairo_save (cr);
-    cairo_set_rgb_color (cr, 1, 1, 1);
-    cairo_set_alpha (cr, alpha);
-    cairo_set_operator (cr, CAIRO_OPERATOR_SRC);
+    cairo_set_source_rgba (cr, 1, 1, 1, alpha);
+    cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
     cairo_rectangle (cr, 0, 0, width, height);
     cairo_fill (cr);
     cairo_restore (cr);
 }
     
-Pixmap
+static Pixmap
 make_background (Display *dpy, Window root, int width, int height, int depth,
 		 Visual *visual, Colormap cmap, Bool opaque)
 {
-    cairo_t		*cr = cairo_create ();
+    cairo_t		*cr;
     cairo_surface_t	*back_surface;
     cairo_surface_t	*temp_surface = 0;
+    cairo_surface_t	*target_surface;
     Pixmap		background;
 
     /*
      * Background pixmap 
      */
     background = XCreatePixmap (dpy, root, width, height, depth);
-    back_surface = cairo_xlib_surface_create (dpy, background, visual, 0, cmap);
+    back_surface = cairo_xlib_surface_create (dpy, background, visual, width, height);
+    target_surface = back_surface;
 
     if (depth == 32)
     {
@@ -71,10 +75,9 @@ make_background (Display *dpy, Window root, int width, int height, int depth,
 	 * draw the background to the temporary surface
 	 */
     
-	cairo_set_target_surface (cr, temp_surface);
+	target_surface = temp_surface;
     }
-    else
-	cairo_set_target_surface (cr, back_surface);
+    cr = cairo_create (target_surface);
 
     clear (cr, width, height, temp_surface ? 0 : 1);
 
@@ -82,8 +85,7 @@ make_background (Display *dpy, Window root, int width, int height, int depth,
     {
 	cairo_save (cr);
 	{
-	    cairo_set_rgb_color (cr, 1, 1, 1);
-	    cairo_set_alpha (cr, opaque ? 1 : 0.5);
+	    cairo_set_source_rgba (cr, 1, 1, 1, opaque ? 1 : 0.5);
 	    cairo_scale (cr, width, height);
 	    cairo_translate (cr, 0.5, 0.5);
 	    cairo_arc (cr, 0, 0, 0.5, 0, 2 * M_PI);
@@ -96,13 +98,15 @@ make_background (Display *dpy, Window root, int width, int height, int depth,
 
     if (temp_surface)
     {
-	cairo_set_target_surface (cr, back_surface);
+	cairo_t *cr2;
 
-	clear (cr, width, height, 0);
+	cr2 = cairo_create (back_surface);
 
-	cairo_set_alpha (cr, opaque ? 1 : 0.8);
+	clear (cr2, width, height, 0);
 
-	cairo_show_surface (cr, temp_surface, width, height);
+	cairo_set_source_surface (cr2, temp_surface, 0, 0);
+	cairo_paint_with_alpha (cr2, opaque ? 1 : 0.8);
+	cairo_destroy (cr2);
 	cairo_surface_destroy (temp_surface);
     }
     cairo_surface_destroy (back_surface);
@@ -110,14 +114,14 @@ make_background (Display *dpy, Window root, int width, int height, int depth,
     return background;
 }
 
-void
+static void
 main_x (char *dpy_name, char *geom, Bool seconds, 
 	Bool translucent, Bool square, Bool opaque)
 {
     Display		    *dpy;
     int			    scr;
     int			    x = 0, y = 0;
-    int			    width = CLOCK_WIDTH, height = CLOCK_HEIGHT;
+    unsigned int	    width = CLOCK_WIDTH, height = CLOCK_HEIGHT;
     Window		    root;
     Visual		    *visual;
     XWMHints		    *wmhints;
@@ -135,7 +139,7 @@ main_x (char *dpy_name, char *geom, Bool seconds,
     XEvent		    ev;
     Bool		    paint = False;
     int			    timeout;
-    cairo_t		    *cr = cairo_create ();
+    cairo_t		    *cr;
     
     dpy = XOpenDisplay (dpy_name);
     if (!dpy)
@@ -265,12 +269,13 @@ main_x (char *dpy_name, char *geom, Bool seconds,
 				    u_width, u_height, depth);
 	    buffer_surface = cairo_xlib_surface_create (dpy, buffer,
 							visual, 0, cmap);
-	    cairo_set_target_surface (cr, buffer_surface);
+	    cr = cairo_create (buffer_surface);
 	    XCopyArea (dpy, background, buffer, gc, 
 		       0, 0, u_width, u_height, 0, 0);
 	    fdhand_draw_now (cr, u_width, u_height, seconds);
 	    XCopyArea (dpy, buffer, w, gc, 
 		       0, 0, u_width, u_height, x_off, y_off);
+	    cairo_destroy (cr);
 	    cairo_surface_destroy (buffer_surface);
 	    XFreePixmap (dpy, buffer);
 	    paint = False;

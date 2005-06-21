@@ -74,15 +74,14 @@ static void
 draw_hand (cairo_t *cr, double noon_deg, double width, double length, double alt,
 	   void (*draw) (cairo_t *cr, double width, double length))
 {
-    cairo_matrix_t  *m = cairo_matrix_create ();
-    cairo_current_matrix (cr, m);
+    cairo_matrix_t m;
+    cairo_get_matrix (cr, &m);
     {
 	cairo_translate (cr, alt/2, alt);
 	cairo_rotate (cr, noon_deg * M_PI / 180.0 - M_PI_2);
 	(*draw) (cr, width, length);
     }
-    cairo_set_matrix (cr, m);
-    cairo_matrix_destroy (m);
+    cairo_set_matrix (cr, &m);
 }
 
 #define HOUR_WIDTH	0.03
@@ -120,12 +119,10 @@ draw_time (cairo_t *cr, double width, double height, struct timeval *tv, int sec
 	if (seconds)
 	    draw_hand (cr, second_angle, SECOND_WIDTH, SECOND_LENGTH,
 		       SECOND_ALT, draw_second);
-	cairo_set_rgb_color (cr, 0, 0, 0);
-	cairo_set_alpha (cr, 0.3);
+	cairo_set_source_rgba (cr, 0, 0, 0, 0.3);
 	cairo_fill (cr);
 	
-	cairo_set_rgb_color (cr, 0, 0, 0);
-	cairo_set_alpha (cr, 1);
+	cairo_set_source_rgba (cr, 0, 0, 0, 1);
 	draw_hand (cr, hour_angle, HOUR_WIDTH, HOUR_LENGTH, 
 		   0.0, draw_hour);
 	cairo_fill (cr);
@@ -144,8 +141,7 @@ void
 fdhand_draw_now (cairo_t *cr, double width, double height, int seconds)
 {
     struct timeval  tv;
-    struct timezone tz;
-    gettimeofday (&tv, &tz);
+    gettimeofday (&tv, NULL);
 
     draw_time (cr, width, height, &tv, seconds);
 }

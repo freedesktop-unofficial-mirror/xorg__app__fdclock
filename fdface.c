@@ -29,9 +29,9 @@ draw_fancy_tick (cairo_t *cr, double radius)
 {
     cairo_save (cr);
     cairo_arc (cr, 0, 0, radius, 0, 2 * M_PI);
-    cairo_set_rgb_color (cr, 0.231, 0.502, 0.682);
+    cairo_set_source_rgb (cr, 0.231, 0.502, 0.682);
     cairo_fill (cr);
-    cairo_set_rgb_color (cr, 0.73, 0.73, 0.73);
+    cairo_set_source_rgb (cr, 0.73, 0.73, 0.73);
     cairo_set_line_width (cr, radius * 2 / 3);
     cairo_arc (cr, 0, 0, radius * 2, 0, 2 * M_PI);
     cairo_stroke (cr);
@@ -43,7 +43,7 @@ draw_plain_tick (cairo_t *cr, double radius)
 {
     cairo_save (cr);
     cairo_arc (cr, 0, 0, radius, 0, 2 * M_PI);
-    cairo_set_rgb_color (cr, 0.73, 0.73, 0.73);
+    cairo_set_source_rgb (cr, 0.73, 0.73, 0.73);
     cairo_fill (cr);
     cairo_restore (cr);
 }
@@ -51,8 +51,6 @@ draw_plain_tick (cairo_t *cr, double radius)
 void
 fdface_draw (cairo_t *cr, double width, double height)
 {
-    double  x_off, y_off;
-    double  size;
     int	    minute;
 
     cairo_save (cr);
