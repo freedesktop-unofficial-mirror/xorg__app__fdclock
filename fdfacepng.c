@@ -22,20 +22,19 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <stdio.h>
 #include <cairo.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "fdface.h"
 
 static int
 dump_png (int width, int height)
 {
-    cairo_t *cr;
-    cairo_surface_t *surface;
+    cairo_surface_t *surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+							   width, height);
+    cairo_t *cr = cairo_create (surface);
     char    out[1024];
     
-    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-					  width, height);
-    cr = cairo_create (surface);
     cairo_move_to (cr, 0, 0);
     cairo_line_to (cr, width, 0);
     cairo_line_to (cr, width, height);
@@ -44,10 +43,11 @@ dump_png (int width, int height)
     cairo_set_source_rgb (cr, 1, 1, 1);
     cairo_fill (cr);
     fdface_draw (cr, width, height);
+    cairo_destroy (cr);
+    
     sprintf (out, "freedesktop-clock-%d.png", width);
     cairo_surface_write_to_png (surface, out);
-
-    cairo_destroy (cr);
+    cairo_surface_destroy (surface);
     return 0;
 }
 

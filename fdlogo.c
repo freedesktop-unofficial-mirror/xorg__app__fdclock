@@ -153,6 +153,7 @@ void
 fdlogo_draw (cairo_t *cr, double width, double height)
 {
     double  x_scale, y_scale, scale, x_off, y_off;
+    
     cairo_save (cr);
     x_scale = width / FDLOGO_WIDTH;
     y_scale = height / FDLOGO_HEIGHT;

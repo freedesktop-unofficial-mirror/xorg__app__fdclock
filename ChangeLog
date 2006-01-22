@@ -1,3 +1,19 @@
+2006-01-21  Keith Packard  <keithp@keithp.com>
+
+	* Makefile.am:
+	* write_png.c:
+	* write_png.h:
+	* fdfacepng.c: (dump_png):
+	Replace private png output with cairo_surface_write_to_png
+	
+	* fdclock.c: (clear), (make_background), (main_x):
+	* fdface.c: (draw_fancy_tick), (draw_plain_tick):
+	* fdhand.c: (draw_hand), (draw_time):
+	* fdlogo.c: (draw_outline), (draw_background), (draw_window_at),
+	(draw_windows), (fdlogo_draw):
+	Rewrite for new API, eliminating most X objects and using
+	only cairo objects instead (much cleaner looking).
+
 2005-06-20  Carl Worth  <cworth@cworth.org>
 
 	* fdclock.c: (clear), (make_background), (main_x):

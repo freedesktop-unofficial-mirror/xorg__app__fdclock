@@ -74,14 +74,11 @@ static void
 draw_hand (cairo_t *cr, double noon_deg, double width, double length, double alt,
 	   void (*draw) (cairo_t *cr, double width, double length))
 {
-    cairo_matrix_t m;
-    cairo_get_matrix (cr, &m);
-    {
-	cairo_translate (cr, alt/2, alt);
-	cairo_rotate (cr, noon_deg * M_PI / 180.0 - M_PI_2);
-	(*draw) (cr, width, length);
-    }
-    cairo_set_matrix (cr, &m);
+    cairo_save (cr);
+    cairo_translate (cr, alt/2, alt);
+    cairo_rotate (cr, noon_deg * M_PI / 180.0 - M_PI_2);
+    (*draw) (cr, width, length);
+    cairo_restore (cr);
 }
 
 #define HOUR_WIDTH	0.03
