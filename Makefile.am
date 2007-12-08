@@ -16,7 +16,7 @@ fdclock_LDADD = @FDCLOCK_LIBS@
 
 fdfacepng_LDADD = @FDCLOCK_LIBS@ @PNG_LIBS@
 
-EXTRA_DIST += ChangeLog
+EXTRA_DIST = ChangeLog
 MAINTAINERCLEANFILES = ChangeLog
 
 .PHONY: ChangeLog
